@@ -1,35 +1,60 @@
 class WorldClock {
     constructor() {
-        this.cities = [
-            { id: 'paris', name: 'Paris', timezone: 'Europe/Paris', country: 'France' },
-            { id: 'new-york', name: 'New York', timezone: 'America/New_York', country: 'États-Unis' },
-            { id: 'tokyo', name: 'Tokyo', timezone: 'Asia/Tokyo', country: 'Japon' },
-            { id: 'lagos', name: 'Lagos', timezone: 'Africa/Lagos', country: 'Nigéria' },
-            { id: 'london', name: 'Londres', timezone: 'Europe/London', country: 'Royaume-Uni' },
-            { id: 'sydney', name: 'Sydney', timezone: 'Australia/Sydney', country: 'Australie' },
-            { id: 'dubai', name: 'Dubaï', timezone: 'Asia/Dubai', country: 'Émirats Arabes Unis' },
-            { id: 'singapore', name: 'Singapour', timezone: 'Asia/Singapore', country: 'Singapour' },
-            { id: 'los-angeles', name: 'Los Angeles', timezone: 'America/Los_Angeles', country: 'États-Unis' },
-            { id: 'hong-kong', name: 'Hong Kong', timezone: 'Asia/Hong_Kong', country: 'Chine' },
-            { id: 'mumbai', name: 'Mumbai', timezone: 'Asia/Kolkata', country: 'Inde' },
-            { id: 'sao-paulo', name: 'São Paulo', timezone: 'America/Sao_Paulo', country: 'Brésil' },
-            { id: 'moscow', name: 'Moscou', timezone: 'Europe/Moscow', country: 'Russie' },
-            { id: 'cairo', name: 'Le Caire', timezone: 'Africa/Cairo', country: 'Égypte' },
-            { id: 'mexico-city', name: 'Mexico', timezone: 'America/Mexico_City', country: 'Mexique' }
-        ];
-        
-        this.activeCities = ['paris', 'new-york', 'tokyo', 'lagos'];
+        this.allCities = [];
+        this.activeCities = [];
         this.is24Hour = true;
         this.updateInterval = null;
+        this.isLoading = true;
         
         this.init();
     }
     
-    init() {
+    async init() {
         this.setupHTML();
         this.bindEvents();
+        await this.loadAllCitiesFromAPI();
+        
+        // Charger les villes actives depuis le localStorage ou utiliser des villes par défaut
+        const savedCities = localStorage.getItem('activeCities');
+        if (savedCities) {
+            this.activeCities = JSON.parse(savedCities);
+        } else {
+            // Villes par défaut si aucune n'est sauvegardée
+            this.setDefaultCities();
+        }
+        
         this.renderClocks();
         this.startClock();
+        this.isLoading = false;
+    }
+    
+    setDefaultCities() {
+        // Chercher quelques villes par défaut dans la liste chargée
+        const defaultCityNames = ['Paris', 'New York', 'Tokyo', 'London'];
+        defaultCityNames.forEach(cityName => {
+            const city = this.allCities.find(c => c.name === cityName);
+            if (city) {
+                this.activeCities.push(city.id);
+            }
+        });
+        
+        // Si aucune ville n'a été trouvée (API échouée), utiliser des villes statiques
+        if (this.activeCities.length === 0) {
+            this.activeCities = [
+                'fr-paris',
+                'us-washington',
+                'jp-tokyo',
+                'gb-london'
+            ];
+            
+            // Ajouter ces villes statiques à allCities
+            this.allCities = [
+                { id: 'fr-paris', name: 'Paris', timezone: 'Europe/Paris', country: 'France', countryCode: 'FR' },
+                { id: 'us-washington', name: 'Washington', timezone: 'America/New_York', country: 'États-Unis', countryCode: 'US' },
+                { id: 'jp-tokyo', name: 'Tokyo', timezone: 'Asia/Tokyo', country: 'Japon', countryCode: 'JP' },
+                { id: 'gb-london', name: 'London', timezone: 'Europe/London', country: 'Royaume-Uni', countryCode: 'GB' }
+            ];
+        }
     }
     
     setupHTML() {
@@ -54,7 +79,12 @@ class WorldClock {
                         <h2 class="modal-title">Ajouter une ville</h2>
                         <button class="close-modal" id="closeModal">×</button>
                     </div>
-                    <div class="city-list" id="cityList"></div>
+                    <div class="search-container">
+                        <input type="text" id="citySearch" placeholder="Rechercher un pays ou une ville..." class="search-input">
+                    </div>
+                    <div class="city-list" id="cityList">
+                        <div class="loading">Chargement des villes...</div>
+                    </div>
                 </div>
             </div>
         `;
@@ -68,6 +98,7 @@ class WorldClock {
         const addCityBtn = document.getElementById('addCityBtn');
         const closeModal = document.getElementById('closeModal');
         const modal = document.getElementById('cityModal');
+        const citySearch = document.getElementById('citySearch');
         
         formatToggle.addEventListener('click', () => {
             this.is24Hour = !this.is24Hour;
@@ -90,33 +121,21 @@ class WorldClock {
                 this.hideCityModal();
             }
         });
+        
+        citySearch.addEventListener('input', (e) => {
+            this.filterCities(e.target.value);
+        });
     }
     
     showCityModal() {
         const modal = document.getElementById('cityModal');
-        const cityList = document.getElementById('cityList');
+        const citySearch = document.getElementById('citySearch');
         
-        const availableCities = this.cities.filter(city => !this.activeCities.includes(city.id));
-        
-        cityList.innerHTML = availableCities.map(city => `
-            <div class="city-option" data-city-id="${city.id}">
-                <div>
-                    <div class="city-option-name">${city.name}</div>
-                    <div class="city-option-timezone">${city.timezone} • ${city.country}</div>
-                </div>
-            </div>
-        `).join('');
-        
-        cityList.addEventListener('click', (e) => {
-            const cityOption = e.target.closest('.city-option');
-            if (cityOption) {
-                const cityId = cityOption.dataset.cityId;
-                this.addCity(cityId);
-                this.hideCityModal();
-            }
-        });
+        citySearch.value = '';
+        this.filterCities('');
         
         modal.classList.add('active');
+        citySearch.focus();
     }
     
     hideCityModal() {
@@ -127,20 +146,36 @@ class WorldClock {
     addCity(cityId) {
         if (!this.activeCities.includes(cityId)) {
             this.activeCities.push(cityId);
+            this.saveActiveCities();
             this.renderClocks();
         }
     }
     
     removeCity(cityId) {
         this.activeCities = this.activeCities.filter(id => id !== cityId);
+        this.saveActiveCities();
         this.renderClocks();
+    }
+    
+    saveActiveCities() {
+        localStorage.setItem('activeCities', JSON.stringify(this.activeCities));
     }
     
     renderClocks() {
         const clockGrid = document.getElementById('clockGrid');
         
+        if (this.activeCities.length === 0) {
+            clockGrid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #64748b;">
+                    <p style="font-size: 1.2rem; margin-bottom: 1rem;">Aucune ville sélectionnée</p>
+                    <p>Cliquez sur "Ajouter une ville" pour commencer</p>
+                </div>
+            `;
+            return;
+        }
+        
         const clocksHTML = this.activeCities.map(cityId => {
-            const city = this.cities.find(c => c.id === cityId);
+            const city = this.allCities.find(c => c.id === cityId);
             if (!city) return '';
             
             const timeData = this.getTimeForTimezone(city.timezone);
@@ -151,7 +186,7 @@ class WorldClock {
                     <div class="clock-header">
                         <div class="city-info">
                             <div class="city-name">${city.name}</div>
-                            <div class="timezone">${city.timezone}</div>
+                            <div class="timezone">${city.country}</div>
                         </div>
                         <button class="remove-btn" data-city-id="${city.id}" title="Supprimer">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -228,10 +263,6 @@ class WorldClock {
     
     getTimeDifference(timezone) {
         const now = new Date();
-        const localTime = now.getTime();
-        const targetTime = new Date(now.toLocaleString("en-US", {timeZone: timezone})).getTime();
-        const localOffset = now.getTimezoneOffset() * 60000;
-        
         const targetDate = new Date(now.toLocaleString("en-US", {timeZone: timezone}));
         const localDate = new Date(now.toLocaleString("en-US"));
         
@@ -284,8 +315,101 @@ class WorldClock {
             this.updateInterval = null;
         }
     }
+    
+    async loadAllCitiesFromAPI() {
+        const cityList = document.getElementById('cityList');
+        cityList.innerHTML = '<div class="loading">Chargement des villes du monde entier...</div>';
+        
+        try {
+            // Charger tous les pays avec leurs informations
+            const response = await fetch('https://restcountries.com/v3.1/all?fields=name,capital,timezones,cca2,translations');
+            const countries = await response.json();
+            
+            this.allCities = [];
+            
+            countries.forEach(country => {
+                // Récupérer le nom du pays en français
+                const countryName = country.name.translations?.fra?.common || country.name.common;
+                
+                // Pour chaque capitale du pays
+                if (country.capital && country.timezones && country.timezones.length > 0) {
+                    country.capital.forEach((capital, index) => {
+                        // Utiliser le premier timezone valide (pas UTC)
+                        const timezone = country.timezones.find(tz => !tz.includes('UTC')) || country.timezones[0];
+                        
+                        if (timezone) {
+                            const cityId = `${country.cca2.toLowerCase()}-${capital.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`;
+                            
+                            this.allCities.push({
+                                id: cityId,
+                                name: capital,
+                                timezone: timezone,
+                                country: countryName,
+                                countryCode: country.cca2
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // Trier par nom de ville
+            this.allCities.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+            
+            console.log(`${this.allCities.length} villes chargées avec succès`);
+            
+        } catch (error) {
+            console.error('Erreur lors du chargement des villes:', error);
+            cityList.innerHTML = `
+                <div class="no-results">
+                    <p>Erreur lors du chargement des villes</p>
+                    <p style="font-size: 0.9rem; color: #64748b; margin-top: 0.5rem;">Veuillez réessayer plus tard</p>
+                </div>
+            `;
+        }
+    }
+    
+    filterCities(searchTerm) {
+        const cityList = document.getElementById('cityList');
+        
+        if (this.allCities.length === 0) {
+            cityList.innerHTML = '<div class="loading">Chargement des villes...</div>';
+            return;
+        }
+        
+        const filteredCities = this.allCities.filter(city => 
+            !this.activeCities.includes(city.id) &&
+            (city.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             city.country.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+        
+        if (filteredCities.length === 0) {
+            cityList.innerHTML = '<div class="no-results">Aucune ville trouvée</div>';
+            return;
+        }
+        
+        // Afficher les 30 premiers résultats
+        cityList.innerHTML = filteredCities.slice(0, 30).map(city => `
+            <div class="city-option" data-city-id="${city.id}">
+                <div>
+                    <div class="city-option-name">${city.name}</div>
+                    <div class="city-option-timezone">${city.timezone} • ${city.country}</div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Bind des événements de clic
+        const cityOptions = cityList.querySelectorAll('.city-option');
+        cityOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const cityId = option.dataset.cityId;
+                this.addCity(cityId);
+                this.hideCityModal();
+            });
+        });
+    }
 }
 
+// Initialiser l'horloge mondiale au chargement de la page
 document.addEventListener('DOMContentLoaded', () => {
     new WorldClock();
 });
