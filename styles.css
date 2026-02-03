@@ -6,12 +6,11 @@
 }
 
 :root {
-    /* Palette neutre avec accents sobres */
-    --primary-color: #2563eb;
-    --primary-hover: #1d4ed8;
-    --secondary-color: #64748b;
-    --background: #f8fafc;
-    --surface: #ffffff;
+    /* Palette simple et épurée */
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --background: #ffffff;
+    --surface: #f8fafc;
     --text-primary: #1e293b;
     --text-secondary: #64748b;
     --text-muted: #94a3b8;
@@ -19,7 +18,7 @@
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    --radius: 12px;
+    --radius: 8px;
     --transition: all 0.2s ease;
 }
 
@@ -63,7 +62,7 @@ body {
 /* Main */
 .main {
     flex: 1;
-    padding: 3rem 0;
+    padding: 2rem 0;
 }
 
 /* Contrôles */
@@ -89,10 +88,10 @@ body {
 
 .toggle-switch {
     position: relative;
-    width: 60px;
-    height: 30px;
+    width: 50px;
+    height: 26px;
     background: var(--border-color);
-    border-radius: 30px;
+    border-radius: 26px;
     cursor: pointer;
     transition: var(--transition);
 }
@@ -104,8 +103,8 @@ body {
 .toggle-switch::after {
     content: '';
     position: absolute;
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     background: white;
     border-radius: 50%;
     top: 2px;
@@ -115,7 +114,7 @@ body {
 }
 
 .toggle-switch.active::after {
-    transform: translateX(30px);
+    transform: translateX(24px);
 }
 
 .add-city-btn {
@@ -154,23 +153,11 @@ body {
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-color);
     transition: var(--transition);
-    position: relative;
-    overflow: hidden;
 }
 
 .clock-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
-}
-
-.clock-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary-color), #3b82f6);
 }
 
 .clock-header {
@@ -203,7 +190,7 @@ body {
     color: var(--text-muted);
     cursor: pointer;
     padding: 0.25rem;
-    border-radius: 6px;
+    border-radius: 4px;
     transition: var(--transition);
     display: flex;
     align-items: center;
@@ -319,7 +306,7 @@ body {
     color: var(--text-muted);
     cursor: pointer;
     padding: 0.25rem;
-    border-radius: 6px;
+    border-radius: 4px;
     transition: var(--transition);
 }
 
@@ -335,7 +322,7 @@ body {
     width: 100%;
     padding: 0.75rem 1rem;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius);
     font-size: 1rem;
     font-family: inherit;
     transition: var(--transition);
@@ -361,7 +348,7 @@ body {
 .city-option {
     padding: 1rem;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius);
     cursor: pointer;
     transition: var(--transition);
     display: flex;
@@ -432,25 +419,25 @@ body {
     .container {
         padding: 0 16px;
     }
-    
+
     .title {
         font-size: 1.5rem;
     }
-    
+
     .controls {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .clock-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
-    
+
     .time {
         font-size: 2rem;
     }
-    
+
     .modal-content {
         padding: 1.5rem;
     }
@@ -460,6 +447,7 @@ body {
     .main {
         padding: 2rem 0;
     }
+
     
     .clock-card {
         padding: 1rem;
