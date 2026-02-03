@@ -154,11 +154,11 @@ class WorldClock {
 
             return `
                 <div class="clock-card">
+                    <button class="remove-btn" data-id="${id}">✕</button>
                     <strong>${city.name}</strong>
                     <div>${t.time}</div>
                     <small>${t.date}</small>
                     <div>${diff}</div>
-                    <button class="remove-btn" data-id="${id}">✕</button>
                 </div>
             `;
         }).join('');
