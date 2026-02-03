@@ -26,9 +26,7 @@ class WorldClock {
         this.isLoading = false;
     }
 
-    /* =======================
-       🔹 FALLBACK TIMEZONES
-    ======================= */
+
     getFallbackTimezone(countryCode) {
         const map = {
             FR: 'Europe/Paris',
@@ -95,19 +93,6 @@ class WorldClock {
                     <span>+</span>
                     <span>Ajouter une ville</span>
                 </button>
-            </div>
-        `);
-
-        document.body.insertAdjacentHTML('beforeend', `
-            <div class="modal" id="cityModal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2>Ajouter une ville</h2>
-                        <button id="closeModal">×</button>
-                    </div>
-                    <input id="citySearch" placeholder="Rechercher un pays ou une ville">
-                    <div id="cityList"></div>
-                </div>
             </div>
         `);
     }
