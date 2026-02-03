@@ -335,7 +335,15 @@ class WorldClock {
                 if (country.capital && country.timezones && country.timezones.length > 0) {
                     country.capital.forEach((capital, index) => {
                         // Utiliser le premier timezone valide (pas UTC)
-                        const timezone = country.timezones.find(tz => !tz.includes('UTC')) || country.timezones[0];
+                        const timezone = country.timezones.find(tz => {
+                            try {
+                                Intl.DateTimeFormat('en-US', { timeZone: tz });
+                                return true;
+                            } catch {
+                                return false;
+                            }
+                        });
+
                         
                         if (timezone) {
                             const cityId = `${country.cca2.toLowerCase()}-${capital.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}`;
